@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Question Words — Computer Quest</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0e1a;
+    --panel: #0f1628;
+    --border: #1a2a4a;
+    --accent: #00d4ff;
+    --accent2: #00ff99;
+    --accent3: #ff6b35;
+    --text: #c8e0ff;
+    --dim: #4a6080;
+    --correct: #00ff99;
+    --wrong: #ff4466;
+    --yellow: #ffd700;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Share Tech Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 30px 20px 60px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Header */
+  header {
+    text-align: center;
+    margin-bottom: 36px;
+  }
+
+  .logo {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 11px;
+    letter-spacing: 6px;
+    color: var(--accent);
+    opacity: 0.7;
+    margin-bottom: 8px;
+  }
+
+  h1 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: clamp(22px, 5vw, 38px);
+    font-weight: 900;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1.1;
+    margin-bottom: 8px;
+  }
+
+  .subtitle {
+    font-size: 13px;
+    color: var(--dim);
+    letter-spacing: 2px;
+  }
+
+  /* Score bar */
+  .hud {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-top: 2px solid var(--accent);
+    padding: 10px 20px;
+    margin-bottom: 30px;
+    clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%);
+  }
+
+  .hud-item { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+  .hud-label { color: var(--dim); }
+  .hud-val { color: var(--accent); font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 16px; }
+  .hud-val.green { color: var(--correct); }
+  .hud-val.orange { color: var(--accent3); }
+
+  /* Reference card */
+  .ref-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--yellow);
+    padding: 18px 22px;
+    margin-bottom: 30px;
+    animation: fadeIn 0.5s ease;
+  }
+
+  .ref-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 10px;
+    letter-spacing: 4px;
+    color: var(--yellow);
+    margin-bottom: 14px;
+  }
+
+  .ref-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 8px;
+  }
+
+  .ref-item {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding: 6px 10px;
+    background: rgba(255,215,0,0.05);
+    border: 1px solid rgba(255,215,0,0.15);
+  }
+
+  .ref-word {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 13px;
+    color: var(--yellow);
+    font-weight: 700;
+    min-width: 60px;
+  }
+
+  .ref-meaning { font-size: 12px; color: var(--dim); }
+
+  /* Section title */
+  .section-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 10px;
+    letter-spacing: 4px;
+    color: var(--accent);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, var(--accent), transparent);
+  }
+
+  /* Exercise cards */
+  .exercise-block { margin-bottom: 36px; }
+
+  .question-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 20px 22px;
+    margin-bottom: 10px;
+    position: relative;
+    transition: border-color 0.3s;
+    animation: slideIn 0.4s ease both;
+    clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+  }
+
+  .question-card:hover { border-color: var(--accent); }
+
+  .q-num {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 10px;
+    color: var(--dim);
+    margin-bottom: 10px;
+    letter-spacing: 2px;
+  }
+
+  .q-text {
+    font-size: 16px;
+    color: var(--text);
+    line-height: 1.6;
+    margin-bottom: 14px;
+  }
+
+  .q-text .blank {
+    display: inline-block;
+    min-width: 80px;
+    border-bottom: 2px solid var(--accent);
+    color: var(--accent);
+    text-align: center;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 14px;
+    padding: 0 6px;
+    transition: all 0.3s;
+  }
+
+  .options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .opt-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 14px;
+    padding: 7px 18px;
+    cursor: pointer;
+    transition: all 0.2s;
+    clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+    position: relative;
+  }
+
+  .opt-btn:hover:not(:disabled) {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(0,212,255,0.08);
+    transform: translateY(-2px);
+  }
+
+  .opt-btn.correct {
+    border-color: var(--correct);
+    color: var(--correct);
+    background: rgba(0,255,153,0.12);
+    animation: pulse 0.4s ease;
+  }
+
+  .opt-btn.wrong {
+    border-color: var(--wrong);
+    color: var(--wrong);
+    background: rgba(255,68,102,0.1);
+    animation: shake 0.3s ease;
+  }
+
+  .opt-btn:disabled { cursor: default; }
+
+  .feedback {
+    font-size: 12px;
+    margin-top: 10px;
+    padding: 8px 12px;
+    border-left: 2px solid;
+    opacity: 0;
+    transition: opacity 0.3s;
+    min-height: 36px;
+  }
+
+  .feedback.show { opacity: 1; }
+  .feedback.ok { border-color: var(--correct); color: var(--correct); }
+  .feedback.err { border-color: var(--wrong); color: var(--wrong); }
+
+  /* Matching exercise */
+  .match-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .match-col-title {
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: var(--dim);
+    margin-bottom: 8px;
+    grid-column: 1;
+  }
+
+  .match-col-title + .match-col-title { grid-column: 2; }
+
+  .match-item {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 10px 14px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 0 100%);
+  }
+
+  .match-item:hover:not(.matched):not(.disabled-match) {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(0,212,255,0.06);
+  }
+
+  .match-item.selected-a {
+    border-color: var(--yellow);
+    color: var(--yellow);
+    background: rgba(255,215,0,0.08);
+  }
+
+  .match-item.matched {
+    border-color: var(--correct);
+    color: var(--correct);
+    background: rgba(0,255,153,0.08);
+    cursor: default;
+  }
+
+  .match-item.wrong-match {
+    border-color: var(--wrong);
+    animation: shake 0.3s ease;
+  }
+
+  /* Write exercise */
+  .write-input {
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid var(--accent);
+    color: var(--accent);
+    font-family: 'Orbitron', sans-serif;
+    font-size: 15px;
+    padding: 4px 8px;
+    width: 120px;
+    text-align: center;
+    outline: none;
+    transition: border-color 0.3s;
+  }
+
+  .write-input:focus { border-color: var(--accent2); }
+  .write-input.correct-input { border-color: var(--correct); color: var(--correct); }
+  .write-input.wrong-input { border-color: var(--wrong); color: var(--wrong); }
+
+  .check-btn {
+    background: transparent;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 2px;
+    padding: 6px 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 12px;
+  }
+
+  .check-btn:hover { background: rgba(0,212,255,0.1); }
+
+  /* Result screen */
+  .result-screen {
+    display: none;
+    text-align: center;
+    background: var(--panel);
+    border: 1px solid var(--accent);
+    padding: 40px 30px;
+    margin-top: 20px;
+    clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px));
+    animation: fadeIn 0.6s ease;
+  }
+
+  .result-screen.show { display: block; }
+
+  .result-icon { font-size: 50px; margin-bottom: 16px; }
+
+  .result-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 24px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 10px;
+  }
+
+  .result-score {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 48px;
+    color: var(--yellow);
+    margin: 16px 0;
+  }
+
+  .result-msg { color: var(--dim); font-size: 14px; line-height: 1.7; max-width: 400px; margin: 0 auto 24px; }
+
+  .restart-btn {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border: none;
+    color: #000;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 12px;
+    letter-spacing: 3px;
+    font-weight: 700;
+    padding: 12px 30px;
+    cursor: pointer;
+    transition: transform 0.2s, opacity 0.2s;
+    clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+  }
+
+  .restart-btn:hover { transform: scale(1.05); opacity: 0.9; }
+
+  /* Submit */
+  .submit-zone {
+    text-align: center;
+    margin-top: 10px;
+  }
+
+  .submit-all {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border: none;
+    color: #000;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 11px;
+    letter-spacing: 3px;
+    font-weight: 700;
+    padding: 14px 36px;
+    cursor: pointer;
+    transition: all 0.3s;
+    clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+    position: relative;
+    overflow: hidden;
+  }
+
+  .submit-all:hover { transform: translateY(-3px); box-shadow: 0 8px 30px rgba(0,212,255,0.3); }
+  .submit-all:disabled { opacity: 0.5; cursor: default; transform: none; }
+
+  /* Progress bar */
+  .progress-bar {
+    height: 3px;
+    background: var(--border);
+    margin-bottom: 30px;
+    position: relative;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    width: 0%;
+    transition: width 0.4s ease;
+    position: relative;
+  }
+
+  .progress-fill::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: -3px;
+    width: 8px;
+    height: 8px;
+    background: var(--accent2);
+    border-radius: 50%;
+    box-shadow: 0 0 10px var(--accent2);
+  }
+
+  /* Animations */
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes slideIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
+  @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+  @keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+  @keyframes scanline {
+    0% { top: -10%; }
+    100% { top: 110%; }
+  }
+
+  .scanline {
+    position: fixed;
+    left: 0; width: 100%;
+    height: 80px;
+    background: linear-gradient(transparent, rgba(0,212,255,0.03), transparent);
+    pointer-events: none;
+    z-index: 999;
+    animation: scanline 6s linear infinite;
+  }
+
+  /* Tags row */
+  .tag-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+  .tag {
+    font-size: 10px;
+    letter-spacing: 2px;
+    padding: 3px 10px;
+    border: 1px solid rgba(0,212,255,0.3);
+    color: var(--dim);
+    text-transform: uppercase;
+  }
+
+  /* Stars */
+  .stars { font-size: 28px; margin: 10px 0; }
+
+  @media (max-width: 600px) {
+    .match-grid { grid-template-columns: 1fr; }
+    .ref-grid { grid-template-columns: 1fr 1fr; }
+    h1 { font-size: 22px; }
+  }
+</style>
+</head>
+<body>
+<div class="scanline"></div>
+
+<div class="container">
+  <header>
+    <div class="logo">// ENGLISH QUEST v1.0 //</div>
+    <h1>QUESTION WORDS</h1>
+    <div class="subtitle">LEVEL A1 · COMPUTER MODULE</div>
+  </header>
+
+  <!-- HUD -->
+  <div class="hud">
+    <div class="hud-item">
+      <span class="hud-label">SCORE</span>
+      <span class="hud-val" id="scoreDisplay">0</span>
+    </div>
+    <div class="hud-item">
+      <span class="hud-label">ПРАВИЛЬНО</span>
+      <span class="hud-val green" id="correctDisplay">0</span>
+    </div>
+    <div class="hud-item">
+      <span class="hud-label">ОШИБКИ</span>
+      <span class="hud-val orange" id="wrongDisplay">0</span>
+    </div>
+  </div>
+
+  <!-- Progress -->
+  <div class="progress-bar">
+    <div class="progress-fill" id="progressFill"></div>
+  </div>
+
+  <!-- Reference -->
+  <div class="ref-card">
+    <div class="ref-title">// СПРАВОЧНИК — ВОПРОСИТЕЛЬНЫЕ МЕСТОИМЕНИЯ //</div>
+    <div class="ref-grid">
+      <div class="ref-item"><span class="ref-word">WHAT</span><span class="ref-meaning">что / какой</span></div>
+      <div class="ref-item"><span class="ref-word">WHO</span><span class="ref-meaning">кто</span></div>
+      <div class="ref-item"><span class="ref-word">WHERE</span><span class="ref-meaning">где / куда</span></div>
+      <div class="ref-item"><span class="ref-word">WHEN</span><span class="ref-meaning">когда</span></div>
+      <div class="ref-item"><span class="ref-word">WHY</span><span class="ref-meaning">почему / зачем</span></div>
+      <div class="ref-item"><span class="ref-word">HOW</span><span class="ref-meaning">как / каким образом</span></div>
+      <div class="ref-item"><span class="ref-word">WHICH</span><span class="ref-meaning">который из...</span></div>
+      <div class="ref-item"><span class="ref-word">HOW MUCH</span><span class="ref-meaning">сколько (неисч.)</span></div>
+    </div>
+  </div>
+
+  <!-- PART 1: Choose correct word -->
+  <div class="exercise-block" id="part1">
+    <div class="section-title">ЧАСТЬ 1 — ВЫБЕРИ ПРАВИЛЬНОЕ СЛОВО</div>
+    <div id="mcqContainer"></div>
+  </div>
+
+  <!-- PART 2: Matching -->
+  <div class="exercise-block" id="part2">
+    <div class="section-title">ЧАСТЬ 2 — СОЕДИНИ ВОПРОС С ПЕРЕВОДОМ</div>
+    <div id="matchContainer"></div>
+    <div class="feedback" id="matchFeedback"></div>
+  </div>
+
+  <!-- PART 3: Write -->
+  <div class="exercise-block" id="part3">
+    <div class="section-title">ЧАСТЬ 3 — ВСТАВЬ СЛОВО САМОСТОЯТЕЛЬНО</div>
+    <div id="writeContainer"></div>
+  </div>
+
+  <div class="submit-zone">
+    <button class="submit-all" id="submitAll" onclick="submitAll()">▶ ПРОВЕРИТЬ ВСЁ</button>
+  </div>
+
+  <!-- Result -->
+  <div class="result-screen" id="resultScreen">
+    <div class="result-icon" id="resultIcon">🖥️</div>
+    <div class="result-title" id="resultTitle">MISSION COMPLETE</div>
+    <div class="stars" id="resultStars"></div>
+    <div class="result-score" id="resultScore">0/0</div>
+    <div class="result-msg" id="resultMsg"></div>
+    <button class="restart-btn" onclick="restartAll()">⟳ RESTART</button>
+  </div>
+</div>
+
+<script>
+// ===== DATA =====
+
+const mcqQuestions = [
+  {
+    q: "___ is the CPU? — It is the brain of the computer.",
+    options: ["What", "Who", "Where", "When"],
+    correct: "What",
+    tip: "What = что/какой — спрашиваем о предмете."
+  },
+  {
+    q: "___ made this graphics card? — NVIDIA made it.",
+    options: ["Where", "When", "Who", "Why"],
+    correct: "Who",
+    tip: "Who = кто — спрашиваем о человеке или компании."
+  },
+  {
+    q: "___ is the power button? — It is on the front panel.",
+    options: ["When", "Where", "Who", "How"],
+    correct: "Where",
+    tip: "Where = где — спрашиваем о месте."
+  },
+  {
+    q: "___ does the RAM store data? — It stores data very fast.",
+    options: ["Where", "Who", "How", "When"],
+    correct: "How",
+    tip: "How = как — спрашиваем о способе."
+  },
+  {
+    q: "___ is the computer slow? — Because there is too much RAM usage.",
+    options: ["What", "Who", "When", "Why"],
+    correct: "Why",
+    tip: "Why = почему — спрашиваем о причине."
+  },
+  {
+    q: "___ monitor do you like — the big one or the small one?",
+    options: ["What", "Which", "Who", "How"],
+    correct: "Which",
+    tip: "Which = который — выбираем из нескольких вариантов."
+  },
+  {
+    q: "___ does the computer start? — It starts in 5 seconds.",
+    options: ["Where", "Why", "When", "Who"],
+    correct: "When",
+    tip: "When = когда — спрашиваем о времени."
+  },
+  {
+    q: "___ RAM does this game need? — It needs 8 GB.",
+    options: ["How much", "Who", "Where", "When"],
+    correct: "How much",
+    tip: "How much = сколько — спрашиваем о количестве."
+  }
+];
+
+const matchLeft = [
+  { id: "a", text: "What is a keyboard?" },
+  { id: "b", text: "Who is Linus Torvalds?" },
+  { id: "c", text: "Where is the motherboard?" },
+  { id: "d", text: "When does it overheat?" },
+  { id: "e", text: "Why do we need a fan?" },
+  { id: "f", text: "How does Wi-Fi work?" }
+];
+
+const matchRight = [
+  { id: "c", text: "Где находится материнская плата?" },
+  { id: "a", text: "Что такое клавиатура?" },
+  { id: "e", text: "Зачем нам нужен вентилятор?" },
+  { id: "f", text: "Как работает Wi-Fi?" },
+  { id: "b", text: "Кто такой Линус Торвальдс?" },
+  { id: "d", text: "Когда он перегревается?" }
+];
+
+const writeQuestions = [
+  {
+    before: "",
+    after: " is inside the computer case? — The motherboard and CPU are inside.",
+    correct: "What",
+    hint: "что"
+  },
+  {
+    before: "",
+    after: " invented the first personal computer? — Steve Wozniak did.",
+    correct: "Who",
+    hint: "кто"
+  },
+  {
+    before: "",
+    after: " does the computer crash? — Because the driver is broken.",
+    correct: "Why",
+    hint: "почему"
+  },
+  {
+    before: "",
+    after: " fast is your internet? — It is 100 Mbps.",
+    correct: "How",
+    hint: "как"
+  },
+  {
+    before: "",
+    after: " do you plug in the USB? — On the side of the laptop.",
+    correct: "Where",
+    hint: "где"
+  }
+];
+
+// ===== STATE =====
+let score = 0, correctCount = 0, wrongCount = 0;
+let totalItems = mcqQuestions.length + matchLeft.length + writeQuestions.length;
+let answeredItems = 0;
+let matchSelectedA = null;
+let matchedPairs = new Set();
+let mcqAnswered = new Array(mcqQuestions.length).fill(false);
+let writeAnswered = new Array(writeQuestions.length).fill(false);
+let matchScore = 0;
+let mcqScore = 0;
+let writeScore = 0;
+
+// ===== BUILD MCQ =====
+function buildMCQ() {
+  const container = document.getElementById('mcqContainer');
+  mcqQuestions.forEach((q, i) => {
+    const delay = i * 0.07;
+    const card = document.createElement('div');
+    card.className = 'question-card';
+    card.style.animationDelay = delay + 's';
+    card.id = 'mcq_' + i;
+
+    const parts = q.q.split('___');
+    card.innerHTML = `
+      <div class="q-num">ВОПРОС ${String(i+1).padStart(2,'0')} / ${mcqQuestions.length}</div>
+      <div class="q-text">${parts[0]}<span class="blank" id="blank_${i}">___</span>${parts[1]}</div>
+      <div class="options" id="opts_${i}">
+        ${q.options.map(o => `<button class="opt-btn" onclick="checkMCQ(${i}, '${o}')">${o}</button>`).join('')}
+      </div>
+      <div class="feedback" id="fb_${i}"></div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+function checkMCQ(i, chosen) {
+  if (mcqAnswered[i]) return;
+  mcqAnswered[i] = true;
+  const q = mcqQuestions[i];
+  const opts = document.querySelectorAll(`#opts_${i} .opt-btn`);
+  const fb = document.getElementById('fb_' + i);
+  const blank = document.getElementById('blank_' + i);
+
+  opts.forEach(btn => {
+    btn.disabled = true;
+    if (btn.textContent === q.correct) btn.classList.add('correct');
+  });
+
+  if (chosen === q.correct) {
+    blank.textContent = q.correct;
+    blank.style.color = 'var(--correct)';
+    fb.className = 'feedback show ok';
+    fb.textContent = '✓ Правильно! ' + q.tip;
+    mcqScore++;
+    addScore(10);
+  } else {
+    const wrongBtn = [...opts].find(b => b.textContent === chosen);
+    if (wrongBtn) wrongBtn.classList.add('wrong');
+    blank.textContent = q.correct;
+    blank.style.color = 'var(--wrong)';
+    fb.className = 'feedback show err';
+    fb.textContent = '✗ Неверно. Правильный ответ: ' + q.correct + '. ' + q.tip;
+    addWrong();
+  }
+  updateProgress();
+}
+
+// ===== BUILD MATCH =====
+function buildMatch() {
+  const container = document.getElementById('matchContainer');
+
+  const grid = document.createElement('div');
+  grid.className = 'match-grid';
+
+  // Titles
+  const tL = document.createElement('div');
+  tL.className = 'match-col-title';
+  tL.textContent = '// АНГЛИЙСКИЙ ВОПРОС';
+  const tR = document.createElement('div');
+  tR.className = 'match-col-title';
+  tR.textContent = '// РУССКИЙ ПЕРЕВОД';
+
+  // Shuffle matchRight display
+  const shuffledRight = [...matchRight];
+
+  // Build columns
+  const colL = document.createElement('div');
+  const colR = document.createElement('div');
+
+  matchLeft.forEach(item => {
+    const el = document.createElement('div');
+    el.className = 'match-item';
+    el.dataset.id = item.id;
+    el.dataset.side = 'left';
+    el.textContent = item.text;
+    el.onclick = () => handleMatchClick(el, 'left');
+    colL.appendChild(el);
+  });
+
+  shuffledRight.forEach(item => {
+    const el = document.createElement('div');
+    el.className = 'match-item';
+    el.dataset.id = item.id;
+    el.dataset.side = 'right';
+    el.textContent = item.text;
+    el.onclick = () => handleMatchClick(el, 'right');
+    colR.appendChild(el);
+  });
+
+  grid.appendChild(tL);
+  grid.appendChild(tR);
+  grid.appendChild(colL);
+  grid.appendChild(colR);
+  container.appendChild(grid);
+}
+
+function handleMatchClick(el, side) {
+  if (el.classList.contains('matched') || el.classList.contains('disabled-match')) return;
+
+  if (side === 'left') {
+    // deselect previous
+    document.querySelectorAll('.match-item.selected-a').forEach(e => e.classList.remove('selected-a'));
+    el.classList.add('selected-a');
+    matchSelectedA = el;
+  } else {
+    if (!matchSelectedA) return;
+    // check
+    const idA = matchSelectedA.dataset.id;
+    const idB = el.dataset.id;
+    if (idA === idB) {
+      matchSelectedA.classList.remove('selected-a');
+      matchSelectedA.classList.add('matched');
+      el.classList.add('matched');
+      matchedPairs.add(idA);
+      matchSelectedA = null;
+      matchScore++;
+      addScore(8);
+      updateProgress();
+
+      const fb = document.getElementById('matchFeedback');
+      fb.className = 'feedback show ok';
+      fb.textContent = '✓ Отличное совпадение! +8 очков';
+
+      if (matchedPairs.size === matchLeft.length) {
+        setTimeout(() => {
+          fb.textContent = '✓ ВСЕ ПАРЫ НАЙДЕНЫ! Отличная работа!';
+        }, 400);
+      }
+    } else {
+      el.classList.add('wrong-match');
+      matchSelectedA.classList.remove('selected-a');
+      matchSelectedA.classList.add('wrong-match');
+      addWrong();
+      const fb = document.getElementById('matchFeedback');
+      fb.className = 'feedback show err';
+      fb.textContent = '✗ Не совпадает. Попробуй ещё раз!';
+      setTimeout(() => {
+        el.classList.remove('wrong-match');
+        if (matchSelectedA) matchSelectedA.classList.remove('wrong-match');
+        matchSelectedA = null;
+      }, 600);
+    }
+  }
+}
+
+// ===== BUILD WRITE =====
+function buildWrite() {
+  const container = document.getElementById('writeContainer');
+  writeQuestions.forEach((q, i) => {
+    const card = document.createElement('div');
+    card.className = 'question-card';
+    card.style.animationDelay = (i * 0.08) + 's';
+    card.id = 'write_' + i;
+
+    card.innerHTML = `
+      <div class="q-num">ЗАДАНИЕ ${String(i+1).padStart(2,'0')} / ${writeQuestions.length}</div>
+      <div class="q-text">
+        <input type="text" class="write-input" id="winput_${i}" placeholder="${q.hint}" maxlength="8" onkeydown="if(event.key==='Enter') checkWrite(${i})">
+        ${q.after}
+      </div>
+      <button class="check-btn" onclick="checkWrite(${i})">CHECK</button>
+      <div class="feedback" id="wfb_${i}"></div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+function checkWrite(i) {
+  if (writeAnswered[i]) return;
+  const inp = document.getElementById('winput_' + i);
+  const fb = document.getElementById('wfb_' + i);
+  const val = inp.value.trim();
+  const correct = writeQuestions[i].correct;
+
+  if (!val) { fb.className = 'feedback show err'; fb.textContent = '✗ Введи слово!'; return; }
+
+  writeAnswered[i] = true;
+  inp.disabled = true;
+
+  if (val.toLowerCase() === correct.toLowerCase()) {
+    inp.classList.add('correct-input');
+    inp.value = correct;
+    fb.className = 'feedback show ok';
+    fb.textContent = '✓ Верно! ' + correct + ' — ' + writeQuestions[i].hint + '. +10 очков';
+    writeScore++;
+    addScore(10);
+  } else {
+    inp.classList.add('wrong-input');
+    fb.className = 'feedback show err';
+    fb.textContent = `✗ Неверно. Правильно: ${correct}. Ты написал: "${val}"`;
+    addWrong();
+  }
+  updateProgress();
+}
+
+// ===== HELPERS =====
+function addScore(pts) {
+  score += pts;
+  correctCount++;
+  document.getElementById('scoreDisplay').textContent = score;
+  document.getElementById('correctDisplay').textContent = correctCount;
+}
+
+function addWrong() {
+  wrongCount++;
+  document.getElementById('wrongDisplay').textContent = wrongCount;
+}
+
+function updateProgress() {
+  const done = mcqAnswered.filter(Boolean).length + matchedPairs.size + writeAnswered.filter(Boolean).length;
+  const pct = Math.round((done / totalItems) * 100);
+  document.getElementById('progressFill').style.width = pct + '%';
+}
+
+// ===== SUBMIT ALL =====
+function submitAll() {
+  // Check unanswered MCQ
+  mcqQuestions.forEach((q, i) => {
+    if (!mcqAnswered[i]) {
+      const fb = document.getElementById('fb_' + i);
+      const blank = document.getElementById('blank_' + i);
+      fb.className = 'feedback show err';
+      fb.textContent = '✗ Не отвечено. Правильный ответ: ' + q.correct;
+      blank.textContent = q.correct;
+      blank.style.color = 'var(--wrong)';
+      mcqAnswered[i] = true;
+      addWrong();
+      const opts = document.querySelectorAll(`#opts_${i} .opt-btn`);
+      opts.forEach(b => { b.disabled = true; if (b.textContent === q.correct) b.classList.add('correct'); });
+    }
+  });
+
+  // Check unanswered Write
+  writeQuestions.forEach((q, i) => {
+    if (!writeAnswered[i]) {
+      checkWrite(i);
+      if (!writeAnswered[i]) { // still not answered = empty
+        writeAnswered[i] = true;
+        addWrong();
+        const fb = document.getElementById('wfb_' + i);
+        fb.className = 'feedback show err';
+        fb.textContent = `✗ Правильный ответ: ${q.correct}`;
+      }
+    }
+  });
+
+  updateProgress();
+  document.getElementById('submitAll').disabled = true;
+  setTimeout(showResult, 600);
+}
+
+function showResult() {
+  const total = mcqQuestions.length + matchLeft.length + writeQuestions.length;
+  const got = mcqScore + matchScore + writeScore;
+  const pct = Math.round((got / total) * 100);
+
+  const screen = document.getElementById('resultScreen');
+  screen.classList.add('show');
+  document.getElementById('resultScore').textContent = `${got} / ${total}`;
+
+  let icon, title, stars, msg;
+  if (pct >= 90) {
+    icon = '🏆'; title = 'SYSTEM MASTER!'; stars = '★★★★★';
+    msg = 'Потрясающий результат! Ты знаешь вопросительные местоимения как настоящий pro-геймер! Можно переходить на следующий уровень!';
+  } else if (pct >= 70) {
+    icon = '💻'; title = 'GOOD JOB!'; stars = '★★★★☆';
+    msg = 'Отличная работа! Чуть-чуть повтори те вопросы, где были ошибки — и будет perfect!';
+  } else if (pct >= 50) {
+    icon = '🔧'; title = 'LOADING...'; stars = '★★★☆☆';
+    msg = 'Неплохо! Но кое-что ещё нужно подгрузить в память. Повтори правило и попробуй снова!';
+  } else {
+    icon = '⚠️'; title = 'REBOOT NEEDED'; stars = '★★☆☆☆';
+    msg = 'Не беда! Загляни в справочник сверху и попробуй ещё раз. Ты справишься!';
+  }
+
+  document.getElementById('resultIcon').textContent = icon;
+  document.getElementById('resultTitle').textContent = title;
+  document.getElementById('resultStars').textContent = stars;
+  document.getElementById('resultMsg').textContent = msg;
+
+  screen.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function restartAll() {
+  location.reload();
+}
+
+// ===== INIT =====
+buildMCQ();
+buildMatch();
+buildWrite();
+</script>
+</body>
+</html>
